@@ -23,7 +23,6 @@ LDFLAGS	:= $(DEBUG_LDFLAGS)
 
 OPENZWAVE := ../open-zwave/
 LIBMICROHTTPD := -L/usr/local/lib/ -lmicrohttpd
-UNAME := $(shell uname)
 
 INCLUDES := -I $(OPENZWAVE)/cpp/src -I $(OPENZWAVE)/cpp/src/command_classes/ \
 	-I $(OPENZWAVE)/cpp/src/value_classes/ -I $(OPENZWAVE)/cpp/src/platform/ \
@@ -33,17 +32,17 @@ INCLUDES := -I $(OPENZWAVE)/cpp/src -I $(OPENZWAVE)/cpp/src/command_classes/ \
 # Remove comment below for gnutls support
 #GNUTLS := -lgnutls
 
-
+# for Linux uncomment out next three lines
 LIBZWAVE := $(wildcard $(OPENZWAVE)/*.a)
-ifeq ($(UNAME), Darwin)
-	LIBUSB := -framework IOKit -framework CoreFoundation
-	LIBS := $(LIBZWAVE) $(GNUTLS) $(LIBMICROHTTPD) -pthread $(LIBUSB) $(ARCH) -lresolv
-else
-	ARCH := -arch i386 -arch x86_64
-	CFLAGS += $(ARCH)
-	LIBUSB := -ludev
-	LIBS := $(LIBZWAVE) $(GNUTLS) $(LIBMICROHTTPD) -pthread $(LIBUSB) -lresolv
-endif
+#LIBUSB := -ludev
+#LIBS := $(LIBZWAVE) $(GNUTLS) $(LIBMICROHTTPD) -pthread $(LIBUSB) -lresolv
+
+# for Mac OS X comment out above 2 lines and uncomment next 5 lines
+#ARCH := -arch i386 -arch x86_64
+#CFLAGS += $(ARCH)
+#LIBZWAVE := $(wildcard $(OPENZWAVE)/cpp/lib/mac/*.a)
+LIBUSB := -framework IOKit -framework CoreFoundation
+LIBS := $(LIBZWAVE) $(GNUTLS) $(LIBMICROHTTPD) -pthread $(LIBUSB) $(ARCH) -lresolv
 
 %.o : %.cpp
 	$(CXX) $(CFLAGS) $(INCLUDES) -o $@ $<
@@ -51,7 +50,14 @@ endif
 %.o : %.c
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $<
 
-all: ozwcp
+all: defs ozwcp
+
+
+defs:
+ifeq ($(LIBZWAVE),)
+	@echo Please edit the Makefile to avoid this error message.
+	@exit 1
+endif
 
 ozwcp.o: ozwcp.h webserver.h $(OPENZWAVE)/cpp/src/Options.h $(OPENZWAVE)/cpp/src/Manager.h \
 	$(OPENZWAVE)/cpp/src/Node.h $(OPENZWAVE)/cpp/src/Group.h \
